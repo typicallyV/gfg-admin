@@ -18,13 +18,13 @@ const EventNavbar = () => {
             <div className='flex justify-center gap-7'>
                 <ul className='flex'>
                     <li>
-                        <button className={`${activeTab === 'add' ? 'bg-green-600/50' : 'bg-transparent'} p-3 rounded-2xl transition-all duration-300 ease`} onClick={() => setActiveTab('add')} >Add Event</button>
+                        <button className={`${activeTab === 'add' ? 'bg-green-600/50' : 'bg-transparent'} px-6 py-3 rounded-2xl transition-all duration-300 ease`} onClick={() => setActiveTab('add')} >Add Event</button>
                     </li>
                     <li>
-                        <button className={`${activeTab === 'update' ? 'bg-green-600/50' : 'bg-transparent'} p-3 rounded-2xl transition-all duration-300 ease`} onClick={() => setActiveTab('update')} >Update Event</button>
+                        <button className={`${activeTab === 'update' ? 'bg-green-600/50' : 'bg-transparent'} px-6 py-3 rounded-2xl transition-all duration-300 ease`} onClick={() => setActiveTab('update')} >Update Event</button>
                     </li>
                     <li>
-                        <button className={`${activeTab === 'delete' ? 'bg-green-600/50' : 'bg-transparent'} p-3 rounded-2xl transition-all duration-300 ease`} onClick={() => setActiveTab('delete')} >Delete Event</button>
+                        <button className={`${activeTab === 'delete' ? 'bg-green-600/50' : 'bg-transparent'} px-6 py-3 rounded-2xl transition-all duration-300 ease`} onClick={() => setActiveTab('delete')} >Delete Event</button>
                     </li>
                 </ul>
             </div>

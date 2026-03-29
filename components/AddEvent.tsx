@@ -31,8 +31,6 @@ const AddEvent = () => {
   return (
     <div className='flex justify-center items-start px-4 py-6'>
       <div className='w-full max-w-3xl bg-white dark:bg-neutral-900 rounded-2xl shadow-lg border border-neutral-200 dark:border-neutral-700 overflow-hidden'>
-
-        {/* Header */}
         <div className='px-8 py-5 border-b border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800/60'>
           <h2 className='text-xl font-semibold text-neutral-900 dark:text-neutral-100'>Add New Event</h2>
           <p className='text-sm text-neutral-500 dark:text-neutral-400 mt-0.5'>Fill in the details below to create a new event.</p>
@@ -40,7 +38,6 @@ const AddEvent = () => {
 
         <form className='px-8 py-7 space-y-8'>
 
-          {/* ── Basic Info ── */}
           <section>
             <h3 className={sectionHeadingClass}>Basic Info</h3>
             <div className='space-y-5'>
@@ -49,7 +46,7 @@ const AddEvent = () => {
                 <input
                   className={inputClass}
                   type="text"
-                  placeholder='e.g. Hackathon 2025'
+                  placeholder='e.g. Hawkins Heist'
                   value={eventName}
                   onChange={(e) => setEventName(e.target.value)}
                 />
@@ -77,7 +74,6 @@ const AddEvent = () => {
             </div>
           </section>
 
-          {/* ── Schedule ── */}
           <section>
             <h3 className={sectionHeadingClass}>Schedule</h3>
             <div className='grid grid-cols-1 sm:grid-cols-2 gap-5'>
@@ -102,7 +98,6 @@ const AddEvent = () => {
             </div>
           </section>
 
-          {/* ── Details ── */}
           <section>
             <h3 className={sectionHeadingClass}>Details</h3>
             <div className='grid grid-cols-1 sm:grid-cols-2 gap-5'>
@@ -111,7 +106,7 @@ const AddEvent = () => {
                 <input
                   className={inputClass}
                   type="text"
-                  placeholder='e.g. Auditorium A'
+                  placeholder='e.g. DT 702'
                   value={eventVenue}
                   onChange={(e) => setEventVenue(e.target.value)}
                 />
@@ -131,7 +126,7 @@ const AddEvent = () => {
                 <input
                   className={inputClass}
                   type="text"
-                  placeholder='e.g. AI & ML'
+                  placeholder='e.g. Stranger Things'
                   value={eventTheme}
                   onChange={(e) => setEventTheme(e.target.value)}
                 />
@@ -159,7 +154,6 @@ const AddEvent = () => {
             </div>
           </section>
 
-          {/* ── Registration ── */}
           <section>
             <h3 className={sectionHeadingClass}>Registration</h3>
             <div className='grid grid-cols-1 sm:grid-cols-2 gap-5'>
@@ -206,7 +200,6 @@ const AddEvent = () => {
             </div>
           </section>
 
-          {/* ── Media ── */}
           <section>
             <h3 className={sectionHeadingClass}>Media</h3>
             <div>
@@ -235,7 +228,6 @@ const AddEvent = () => {
             </div>
           </section>
 
-          {/* ── Submit ── */}
           <button
             className='w-full py-3 rounded-xl bg-green-600 hover:bg-green-700 active:bg-green-800 text-white font-semibold tracking-wide transition-colors duration-200 shadow-sm'
             type="submit"
