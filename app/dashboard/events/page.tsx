@@ -1,9 +1,12 @@
+import EventNavbar from '@/components/EventNavbar'
 import React from 'react'
 
-const page = () => {
+const Event = () => {
   return (
-    <div>Events Page</div>
+    <div>
+      <EventNavbar/>
+    </div>
   )
 }
 
-export default page
+export default Event
