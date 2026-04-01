@@ -6,6 +6,12 @@ export const eventTabs = [
     { key: 'delete', label: 'Delete Event', icon: Trash2 },
 ]
 
+export const teamTabs = [
+    { key: 'add', label: 'Add Team', icon: PlusCircle },
+    { key: 'update', label: 'Update Team', icon: PencilLine },
+    { key: 'delete', label: 'Delete Team', icon: Trash2 },
+]
+
 export const bottomTabs = [
     {
         key: 'Teams',
