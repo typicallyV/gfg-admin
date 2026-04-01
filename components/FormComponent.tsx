@@ -71,19 +71,21 @@ const FormComponent = ({ type }: { type: string }) => {
                     <h3 className={sectionHeadingClass}>Schedule</h3>
                     <div className='grid grid-cols-1 sm:grid-cols-2 gap-5'>
                         <div>
-                            <label className={labelClass}>Start Date</label>
+                            <label htmlFor="start-date" className={labelClass}>Start Date</label>
                             <input
                                 className={inputClass}
                                 type="date"
+                                id="start-date"
                                 value={eventStartDate}
                                 onChange={(e) => setEventStartDate(e.target.value)}
                             />
                         </div>
                         <div>
-                            <label className={labelClass}>End Date</label>
+                            <label htmlFor="end-date" className={labelClass}>End Date</label>
                             <input
                                 className={inputClass}
                                 type="date"
+                                id="end-date"
                                 value={eventEndDate}
                                 onChange={(e) => setEventEndDate(e.target.value)}
                             />
