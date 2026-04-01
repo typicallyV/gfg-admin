@@ -1,40 +1,45 @@
 import cloudinary from "@/lib/cloudinary";
 import { NextResponse } from "next/server";
-import { Readable } from "stream";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+function uploadSingleFile(buffer: Buffer, mimeType: string, folder: string): Promise<any> {
+  const base64 = buffer.toString("base64");
+  const dataUri = `data:${mimeType};base64,${base64}`;
+  return cloudinary.uploader.upload(dataUri, {
+    resource_type: "auto",
+    folder,
+  });
+}
+
 export async function POST(request: Request) {
   try {
     const formData = await request.formData();
-    const file = formData.get("file") as File;
 
-    if (!file) {
-      return NextResponse.json({ error: "file missing" }, { status: 400 });
+    const files = formData.getAll("file").filter(
+      (entry): entry is File => entry instanceof File
+    );
+
+    if (files.length === 0) {
+      return NextResponse.json({ error: "file(s) missing" }, { status: 400 });
     }
 
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
+    const folder = (formData.get("folder") as string) ?? "";
 
-    const result: any = await new Promise((resolve, reject) => {
-      const stream = cloudinary.uploader.upload_stream(
-        { resource_type: "auto" },
-        (error, result) => {
-          if (error) reject(error);
-          else resolve(result);
-        },
-      );
+    const results = await Promise.all(
+      files.map(async (file) => {
+        const bytes = await file.arrayBuffer();
+        return uploadSingleFile(Buffer.from(bytes), file.type, folder);
+      })
+    );
 
-      Readable.from(buffer).pipe(stream);
-    });
-
-    return NextResponse.json(result);
+    return NextResponse.json(results);
   } catch (err: any) {
     console.error("UPLOAD ERROR:", err);
     return NextResponse.json(
       { error: err?.message || "upload failed" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
