@@ -11,7 +11,7 @@ const sectionHeadingClass =
     'text-xs font-semibold uppercase tracking-widest text-green-600 dark:text-green-400 mb-4 pb-2 border-b border-neutral-200 dark:border-neutral-700'
 
 
-const FormComponent = ({ type }: { type: string }) => {
+const FormComponent = ({ type, onSuccess }: { type: string; onSuccess?: () => void }) => {
     const [eventName, setEventName] = useState('');
     const [eventDesc, setEventDesc] = useState('');
     const [eventShortDesc, setEventShortDesc] = useState('');
@@ -28,9 +28,125 @@ const FormComponent = ({ type }: { type: string }) => {
     const [eventRegistrationFee, setEventRegistrationFee] = useState('');
     const [eventRegistrationCount, setEventRegistrationCount] = useState(0);
     const [eventRegistrationStatus, setEventRegistrationStatus] = useState('');
+
+    const [bannerPublicId, setBannerPublicId] = useState('');
+    const [galleryPublicIds, setGalleryPublicIds] = useState<string[]>([]);
+    const [isUploading, setIsUploading] = useState(false);
+
+    const uploadSingleFile = async (file: File, folder: string) => {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('folder', folder);
+
+        const res = await fetch('/api/upload', {
+            method: 'POST',
+            body: formData,
+        });
+
+        if (!res.ok) {
+            const text = await res.text();
+            console.error('Upload failed:', text);
+            throw new Error(text);
+        }
+
+        const data = await res.json();
+        return Array.isArray(data) ? data[0] : data;
+    };
+
+    
+    const deleteFromCloudinary = async (publicId: string) => {
+        await fetch('/api/delete', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ publicId }),
+        });
+    };
+
+    const removeBanner = async () => {
+        if (bannerPublicId) {
+            await deleteFromCloudinary(bannerPublicId);
+            setBannerPublicId('');
+        }
+        setEventImage(null);
+    };
+
+    
+    const removeGalleryImage = async (idx: number) => {
+        if (galleryPublicIds[idx]) {
+            await deleteFromCloudinary(galleryPublicIds[idx]);
+            setGalleryPublicIds((prev) => prev.filter((_, i) => i !== idx));
+        }
+        setEventGallery((prev) => prev.filter((_, i) => i !== idx));
+    };
+
+   
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        setIsUploading(true);
+
+        try {
+            let bannerResult = null;
+            if (eventImage && !bannerPublicId) {
+                bannerResult = await uploadSingleFile(eventImage, 'events/banners');
+                setBannerPublicId(bannerResult.public_id);
+                console.log('Banner uploaded:', {
+                    public_id: bannerResult.public_id,
+                    url: bannerResult.url,
+                    secure_url: bannerResult.secure_url,
+                });
+            }
+
+            const newGalleryFiles = eventGallery.slice(galleryPublicIds.length);
+            let galleryResults: any[] = [];
+            if (newGalleryFiles.length > 0) {
+                galleryResults = await Promise.all(
+                    newGalleryFiles.map((file) =>
+                        uploadSingleFile(file, 'events/gallery')
+                    )
+                );
+                const newIds = galleryResults.map((r) => r.public_id);
+                setGalleryPublicIds((prev) => [...prev, ...newIds]);
+                galleryResults.forEach((r, i) => {
+                    console.log(`Gallery image ${i + 1} uploaded:`, {
+                        public_id: r.public_id,
+                        url: r.url,
+                        secure_url: r.secure_url,
+                    });
+                });
+            }
+
+            console.log('All uploads complete.');
+
+            setEventName('');
+            setEventDesc('');
+            setEventShortDesc('');
+            setEventStartDate('');
+            setEventEndDate('');
+            setEventImage(null);
+            setEventGallery([]);
+            setEventVenue('');
+            setEventType('');
+            setEventTheme('');
+            setEventAudience('');
+            setEventTeamSize(0);
+            setEventPricing('');
+            setEventRegistrationFee('');
+            setEventRegistrationCount(0);
+            setEventRegistrationStatus('');
+            setBannerPublicId('');
+            setGalleryPublicIds([]);
+
+            onSuccess?.();
+        } catch (err) {
+            console.error('Submit error:', err);
+        } finally {
+            setIsUploading(false);
+        }
+    };
+
     return (
         <div className='flex justify-center items-start px-4 py-6'>
-            <form className='px-8 py-7 space-y-8'>
+            <form className='px-8 py-7 space-y-8' onSubmit={handleSubmit}>
                 <section>
                     <h3 className={sectionHeadingClass}>Basic Info</h3>
                     <div className='space-y-5'>
@@ -196,33 +312,47 @@ const FormComponent = ({ type }: { type: string }) => {
                 <section>
                     <h3 className={sectionHeadingClass}>Media</h3>
                     <div className='space-y-5'>
-                        {/* Event Banner / Poster */}
                         <div>
                             <label className={labelClass}>Event Banner / Poster</label>
-                            <label className='flex flex-col items-center justify-center w-full h-32 rounded-lg border-2 border-dashed border-neutral-300 dark:border-neutral-600 bg-neutral-50 dark:bg-neutral-800 hover:border-green-500 dark:hover:border-green-500 cursor-pointer transition duration-200'>
-                                <div className='flex flex-col items-center justify-center gap-1 text-neutral-500 dark:text-neutral-400'>
-                                    {eventImage ? (
-                                        <span className='text-sm font-medium text-green-600 dark:text-green-400'>{eventImage.name}</span>
-                                    ) : (
-                                        <>
-                                            <svg xmlns="http://www.w3.org/2000/svg" className='w-7 h-7' fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                                                <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
-                                            </svg>
-                                            <span className='text-sm'>Click to upload an image</span>
-                                            <span className='text-xs'>PNG, JPG, WEBP up to 10 MB</span>
-                                        </>
-                                    )}
+                            {eventImage ? (
+                                <div className='relative w-full h-32 rounded-lg overflow-hidden border border-neutral-200 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800'>
+                                    <img
+                                        src={URL.createObjectURL(eventImage)}
+                                        alt={eventImage.name}
+                                        className='w-full h-full object-cover'
+                                        onLoad={(e) => URL.revokeObjectURL((e.target as HTMLImageElement).src)}
+                                    />
+                                    <button
+                                        type='button'
+                                        onClick={removeBanner}
+                                        className='absolute top-2 right-2 p-1.5 rounded-full bg-red-600 hover:bg-red-700 text-white transition-colors duration-150'
+                                        title='Remove banner'
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" className='w-4 h-4' fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                    </button>
+                                    <span className='absolute bottom-0 left-0 right-0 px-2 py-1 text-[10px] text-white bg-black/50 truncate'>{eventImage.name}</span>
                                 </div>
-                                <input
-                                    type="file"
-                                    accept="image/*"
-                                    className='hidden'
-                                    onChange={(e) => setEventImage(e.target.files?.[0] ?? null)}
-                                />
-                            </label>
+                            ) : (
+                                <label className='flex flex-col items-center justify-center w-full h-32 rounded-lg border-2 border-dashed border-neutral-300 dark:border-neutral-600 bg-neutral-50 dark:bg-neutral-800 hover:border-green-500 dark:hover:border-green-500 cursor-pointer transition duration-200'>
+                                    <div className='flex flex-col items-center justify-center gap-1 text-neutral-500 dark:text-neutral-400'>
+                                        <svg xmlns="http://www.w3.org/2000/svg" className='w-7 h-7' fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+                                        </svg>
+                                        <span className='text-sm'>Click to upload an image</span>
+                                        <span className='text-xs'>PNG, JPG, WEBP up to 10 MB</span>
+                                    </div>
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        className='hidden'
+                                        onChange={(e) => setEventImage(e.target.files?.[0] ?? null)}
+                                    />
+                                </label>
+                            )}
                         </div>
 
-                        {/* Event Gallery */}
                         <div>
                             <label className={labelClass}>Event Gallery</label>
                             <label className='flex flex-col items-center justify-center w-full h-32 rounded-lg border-2 border-dashed border-neutral-300 dark:border-neutral-600 bg-neutral-50 dark:bg-neutral-800 hover:border-green-500 dark:hover:border-green-500 cursor-pointer transition duration-200'>
@@ -265,7 +395,7 @@ const FormComponent = ({ type }: { type: string }) => {
                                                 <div className='absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center'>
                                                     <button
                                                         type='button'
-                                                        onClick={() => setEventGallery((prev) => prev.filter((_, i) => i !== idx))}
+                                                        onClick={() => removeGalleryImage(idx)}
                                                         className='p-1.5 rounded-full bg-red-600 hover:bg-red-700 text-white transition-colors duration-150'
                                                         title='Remove image'
                                                     >
@@ -285,10 +415,11 @@ const FormComponent = ({ type }: { type: string }) => {
                 </section>
 
                 <button
-                    className='w-full py-3 rounded-xl bg-green-600 hover:bg-green-700 active:bg-green-800 text-white font-semibold tracking-wide transition-colors duration-200 shadow-sm'
+                    className='w-full py-3 rounded-xl bg-green-600 hover:bg-green-700 active:bg-green-800 text-white font-semibold tracking-wide transition-colors duration-200 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed'
                     type="submit"
+                    disabled={isUploading}
                 >
-                    {type} Event
+                    {isUploading ? 'Uploading...' : `${type} Event`}
                 </button>
 
             </form>

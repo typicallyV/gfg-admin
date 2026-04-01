@@ -10,6 +10,7 @@ export const bottomTabs = [
     {
         key: 'Teams',
         label: 'Teams',
+        href: '/dashboard/teams',
         icon: (active: boolean) => (
             <Users size={20} strokeWidth={active ? 2 : 1.5} />
         ),
@@ -17,6 +18,7 @@ export const bottomTabs = [
     {
         key: 'Events',
         label: 'Events',
+        href: '/dashboard/events',
         icon: (active: boolean) => (
             <CalendarDays size={20} strokeWidth={active ? 2 : 1.5} />
         ),

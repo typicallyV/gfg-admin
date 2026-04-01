@@ -21,7 +21,7 @@ const UpdateEvent = () => {
           <p className='text-sm text-neutral-500 dark:text-neutral-400 mt-0.5'>Look up an event by ID, then edit its details.</p>
         </div>
 
-        <form >
+        <div>
           {!eventFound && <section className='px-8 py-6'>
             <h3 className={sectionHeadingClass}>Look Up Event</h3>
             <div className='flex gap-3'>
@@ -42,8 +42,8 @@ const UpdateEvent = () => {
             </div>
           </section>}
 
-          {eventFound && <FormComponent type='Update' />}
-        </form>
+          {eventFound && <FormComponent type='Update' onSuccess={() => { setEventFound(false); setEventId(''); }} />}
+        </div>
       </div>
     </div>
   )
