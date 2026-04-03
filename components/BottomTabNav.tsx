@@ -1,41 +1,75 @@
 'use client'
 
-import Link from 'next/link'
+import { useState } from 'react'
 import { usePathname } from 'next/navigation'
-import { bottomTabs } from '@/utils/constants'
+import { Calendar, Users} from 'lucide-react'
 
 const BottomTabNav = () => {
     const pathname = usePathname()
+    const [openList, setOpenList] = useState(false)
+
+    const toggleList = () => {
+        setOpenList(!openList)
+    }
 
     return (
-        <nav className='fixed bottom-0 left-0 right-0 z-50 border-t border-neutral-200 dark:border-neutral-700 bg-white/80 dark:bg-neutral-900/80 backdrop-blur-md'>
-            <ul className='flex justify-around items-center h-16 max-w-lg mx-auto px-4'>
-                {bottomTabs.map(({ key, label, icon, href }) => {
-                    const active = pathname.startsWith(href)
-                    return (
-                        <li key={key} className='flex-1 relative'>
-                            <Link
-                                href={href}
-                                className={`w-full flex flex-col items-center justify-center gap-1 py-2 rounded-xl transition-all duration-200 ${active
-                                    ? 'text-green-600 dark:text-green-400'
-                                    : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-800 dark:hover:text-neutral-200'
-                                    }`}
-                            >
-                                <span className={`transition-transform duration-200 ${active ? 'scale-110' : 'scale-100'}`}>
-                                    {icon(active)}
-                                </span>
-                                <span className={`text-[11px] font-medium tracking-wide ${active ? 'font-semibold' : ''}`}>
-                                    {label}
-                                </span>
-                                {active && (
-                                    <span className='absolute bottom-2 w-1 h-1 rounded-full bg-green-500' />
-                                )}
-                            </Link>
-                        </li>
-                    )
-                })}
-            </ul>
-        </nav>
+        <>
+            {openList && (
+                <div
+                    className='fixed inset-0 z-40'
+                    onClick={() => setOpenList(false)}
+                />
+            )}
+
+            <div
+                className={`fixed z-50 right-10 bottom-24 bg-neutral-900 border border-neutral-700 rounded-xl p-3 w-40 shadow-xl transition-all duration-200 origin-bottom-right ${
+                    openList
+                        ? 'opacity-100 scale-100 pointer-events-auto'
+                        : 'opacity-0 scale-90 pointer-events-none'
+                }`}
+            >
+                <ul className='flex flex-col gap-1'>
+                    <li>
+                        <a
+                            href='/dashboard/teams'
+                            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors duration-150 ${
+                                pathname?.startsWith('/dashboard/teams')
+                                    ? 'bg-green-600/20 text-green-400'
+                                    : 'text-neutral-200 hover:bg-neutral-800'
+                            }`}
+                        >
+                            <Users size={18} />
+                            <span className='text-sm font-medium'>Teams</span>
+                        </a>
+                    </li>
+                    <hr className='border-neutral-700 my-1' />
+                    <li>
+                        <a
+                            href='/dashboard/events'
+                            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors duration-150 ${
+                                pathname?.startsWith('/dashboard/events')
+                                    ? 'bg-green-600/20 text-green-400'
+                                    : 'text-neutral-200 hover:bg-neutral-800'
+                            }`}
+                        >
+                            <Calendar size={18} />
+                            <span className='text-sm font-medium'>Events</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+
+            <button
+                className='fixed bottom-6 right-10 w-14 h-14 rounded-full bg-green-600 hover:bg-green-500 active:scale-95 shadow-lg shadow-green-600/30 cursor-pointer z-50 transition-all duration-200 ease-out flex items-center justify-center'
+                onClick={toggleList}
+                aria-label='Toggle navigation menu'
+            >
+                {pathname?.startsWith('/dashboard/teams')
+                    ? <Users size={22} className='text-white' />
+                    : <Calendar size={22} className='text-white' />
+                }
+            </button>
+        </>
     )
 }
 
