@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
-import { getTeams } from "@/controllers/team.controller";
+import { getEvents } from "@/controllers/event.controller";
 
 export async function GET(req: NextRequest) {
-  return getTeams(req);
+  return getEvents(req);
 }

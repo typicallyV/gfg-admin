@@ -215,7 +215,7 @@ export async function updateMember(req: NextRequest, { params }: { params: { id:
     const memberIndex = domain.members.findIndex((m: any) => m._id.toString() === params.id);
     if (memberIndex === -1) return NextResponse.json({ error: 'Member not found' }, { status: 404 });
 
-    domain.members[memberIndex] = { ...domain.members[memberIndex].toObject(), ...member };
+    domain.members[memberIndex] = { ...domain.members[memberIndex], ...member };
     await domain.save();
 
     return NextResponse.json({ domain, success: true });

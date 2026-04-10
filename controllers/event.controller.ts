@@ -4,7 +4,7 @@ import { EventModel } from '../models/Event';
 
 /**
  * @swagger
- * /api/events:
+ * /api/event:
  *   get:
  *     summary: Get events list
  *     description: Retrieve events with optional filters (status, order, limit, page, upcoming)
