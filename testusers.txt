@@ -1,0 +1,10 @@
+const users = [
+  // Members
+  { name: 'Varad Raut',     email: 'varad.raut@gfg-rbu.com',     password: 'varad@123',   role: 'Member'  },
+  { name: 'Neha Tated',     email: 'neha.tated@gfg-rbu.com',     password: 'neha@123',    role: 'Member'  },
+  
+  
+  // Leads
+  { name: 'Pranav Deshmukh', email: 'pranav.deshmukh@gfg-rbu.com', password: 'pranav@123', role: 'Lead' },
+  { name: 'Dhruv Tambekar', email: 'dhruv.tambekar@gfg-rbu.com', password: 'dhruv@123',   role: 'Lead'    },
+];
