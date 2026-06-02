@@ -1,5 +1,10 @@
 import { NextRequest } from "next/server";
-import { deleteMember, updateMember } from "@/controllers/team.controller";
+import { getMember, deleteMember, updateMember } from "@/controllers/team.controller";
+
+export async function GET(req: NextRequest, { params }: any) {
+  const { id } = await params;
+  return getMember(req, { params: { id } });
+}
 
 export async function PUT(req: NextRequest, { params }: any) {
   const { id } = await params;

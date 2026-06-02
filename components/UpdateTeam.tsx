@@ -1,9 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import TeamForm from './TeamForm'
+import UpdateTeamForm from './UpdateTeamForm'
 
-type RoleType = 'leader' | 'member'
+type RoleType = 'leaders' | 'member'
 
 const inputClass =
   'w-full px-4 py-2.5 rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 placeholder-neutral-400 dark:placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition duration-200'
@@ -15,6 +15,23 @@ const UpdateTeam = () => {
   const [teamFound, setTeamFound] = useState<boolean>(false)
   const [teamId, setTeamId] = useState<string>('')
   const [roleType, setRoleType] = useState<RoleType>('member')
+  const [memberData, setMemberData] = useState<any>(null)
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    try {
+      const response = await fetch(`/api/admin/teams/${roleType}/${teamId}`, {
+        method: 'GET',
+      })
+      const { member } = await response.json()
+      setTeamFound(true)
+      setMemberData(member)
+    } catch (error) {
+      console.error('Error fetching team member:', error)
+      setTeamFound(false)
+      setMemberData(null)
+    }
+  }
 
   return (
     <div className='flex justify-center items-start px-4 py-6'>
@@ -30,7 +47,7 @@ const UpdateTeam = () => {
           </p>
         </div>
 
-        <form>
+        <form onSubmit={(e) => handleSubmit(e)}>
           {!teamFound && (
             <section className='px-8 py-6'>
               <h3 className={sectionHeadingClass}>Look Up Team</h3>
@@ -51,7 +68,7 @@ const UpdateTeam = () => {
                   className={inputClass}
                 >
                   <option value="member">Member</option>
-                  <option value="leader">Leader (President / VP)</option>
+                  <option value="leaders">Leader (President / VP)</option>
                 </select>
               </div>
 
@@ -69,8 +86,7 @@ const UpdateTeam = () => {
                 />
 
                 <button
-                  type="button"
-                  onClick={() => setTeamFound(true)}
+                  type="submit"
                   className='shrink-0 px-5 py-2.5 rounded-lg bg-neutral-100 dark:bg-neutral-700 hover:bg-neutral-200 dark:hover:bg-neutral-600 text-neutral-800 dark:text-neutral-100 text-sm font-medium border border-neutral-300 dark:border-neutral-600 transition-colors duration-200'
                 >
                   Find
@@ -78,14 +94,13 @@ const UpdateTeam = () => {
               </div>
             </section>
           )}
-
+        </form>
           {/* 🔽 Form after finding */}
           {teamFound && (
             <div className='px-8 py-6'>
-              <TeamForm roleType={roleType} />
+              <UpdateTeamForm roleType={roleType} memberData={memberData} />
             </div>
           )}
-        </form>
 
       </div>
     </div>

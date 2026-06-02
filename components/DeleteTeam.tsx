@@ -4,12 +4,18 @@ import { useState } from 'react'
 
 const DeleteTeam = () => {
   const [teamId, setTeamId] = useState<string>('')
-  const [roleType, setRoleType] = useState<'leader' | 'member'>('member')
+  const [roleType, setRoleType] = useState<'leaders' | 'member'>('member')
   const [status, setStatus] = useState<'idle' | 'success'>('idle')
 
-  const handleDelete = () => {
-    // later replace with API call
+  const handleDelete = async () => {
     if (!teamId) return
+    const response = await fetch(`/api/admin/teams/${roleType}/${teamId}`, {
+      method: 'DELETE'
+    })
+    if (!response.ok) {
+      alert('Failed to delete. Please check the ID and try again.')
+      return
+    }
     setStatus('success')
   }
 
@@ -32,11 +38,11 @@ const DeleteTeam = () => {
               <select
                 id="position"
                 value={roleType}
-                onChange={(e) => setRoleType(e.target.value as 'leader' | 'member')}
+                onChange={(e) => setRoleType(e.target.value as 'leaders' | 'member')}
                 className='w-full px-4 py-2 border rounded-lg'
               >
                 <option value="member">Member</option>
-                <option value="leader">Leader</option>
+                <option value="leaders">Leader</option>
               </select>
             </div>
 
@@ -57,7 +63,7 @@ const DeleteTeam = () => {
               onClick={handleDelete}
               className='px-5 py-2 bg-red-500 text-white rounded-lg'
             >
-              Delete {roleType === 'leader' ? 'Leader' : 'Member'}
+              Delete {roleType === 'leaders' ? 'Leader' : 'Member'}
             </button>
           </div>
         )}

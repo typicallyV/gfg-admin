@@ -4,12 +4,14 @@ import { useState } from 'react'
 import DeleteTeam from './DeleteTeam'
 import UpdateTeam from './UpdateTeam'
 import AddTeam from './AddTeam'
+import ListAllTeams from './DomainSearch'
 import { teamTabs } from '@/utils/constants'
 
 const TeamNavbar = () => {
-    const [activeTab, setActiveTab] = useState('add');
+    const [activeTab, setActiveTab] = useState('view');
 
     const handleRenderComponent = () => {
+        if (activeTab === 'view') return <ListAllTeams />;
         if (activeTab === 'add') return <AddTeam />;
         if (activeTab === 'update') return <UpdateTeam />;
         if (activeTab === 'delete') return <DeleteTeam />;

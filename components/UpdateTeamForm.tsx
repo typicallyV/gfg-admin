@@ -6,6 +6,7 @@ type RoleType = 'leaders' | 'member'
 
 interface Props {
   roleType: RoleType
+  memberData: any
 }
 
 const inputClass =
@@ -17,15 +18,15 @@ const labelClass =
 const sectionHeadingClass =
   'text-xs font-semibold uppercase tracking-widest text-green-600 dark:text-green-400 mb-4 pb-2 border-b border-neutral-200 dark:border-neutral-700'
 
-const TeamForm = ({ roleType }: Props) => {
+const UpdateTeamForm = ({ roleType, memberData }: Props) => {
   const [formData, setFormData] = useState({
-    firstname: '',
-    lastname: '',
-    email: '',
-    domain: '',
-    linkedinUrl: '',
-    githubUrl: '',
-    role: '',
+    firstname: memberData?.firstname || '',
+    lastname: memberData?.lastname || '',
+    email: memberData?.email || '',
+    domain: memberData?.domain || '',
+    linkedinUrl: memberData?.linkedinUrl || '',
+    githubUrl: memberData?.githubUrl || '',
+    role: memberData?.role || '',
     photo: null as File | null,
   })
 
@@ -47,8 +48,8 @@ const TeamForm = ({ roleType }: Props) => {
     })
     formData.photo = (await imageUrl.json()).url;
     console.log('Image URL:', formData.photo)
-    const response = await fetch(`/api/admin/teams/${roleType}`, {
-      method: 'POST',
+    const response = await fetch(`/api/admin/teams/${roleType}/${memberData?._id}`, {
+      method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
       },
@@ -254,4 +255,4 @@ const TeamForm = ({ roleType }: Props) => {
   )
 }
 
-export default TeamForm
+export default UpdateTeamForm
