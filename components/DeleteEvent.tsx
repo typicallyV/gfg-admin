@@ -13,6 +13,22 @@ const DeleteEvent = () => {
   const [eventId, setEventId] = useState('');
   const [eventDeleted, setEventDeleted] = useState(false);
 
+  const handleDelete = async () => {
+    if (!eventId) return
+
+    const response = await fetch(`/api/admin/events/${eventId}`, {
+      method: 'DELETE',
+    })
+
+    if (!response.ok) {
+      const data = await response.json().catch(() => null)
+      alert(data?.error || 'Failed to delete the event. Please check the ID and try again.')
+      return
+    }
+
+    setEventDeleted(true)
+  }
+
   return (
     <div className='flex justify-center items-start px-4 py-6'>
       <div className='w-full max-w-3xl bg-white dark:bg-neutral-900 rounded-2xl shadow-lg border border-neutral-200 dark:border-neutral-700 overflow-hidden'>
@@ -32,7 +48,7 @@ const DeleteEvent = () => {
             />
             <button
               type="button"
-              onClick={() => setEventDeleted(true)}
+              onClick={() => handleDelete()}
               className='shrink-0 px-5 py-2.5 rounded-lg bg-neutral-100 dark:bg-neutral-700 hover:bg-neutral-200 dark:hover:bg-neutral-600 text-neutral-800 dark:text-neutral-100 text-sm font-medium border border-neutral-300 dark:border-neutral-600 transition-colors duration-200'
             >
               Delete

@@ -4,13 +4,15 @@ import { useState } from 'react'
 import DeleteEvent from './DeleteEvent'
 import UpdateEvent from './UpdateEvent'
 import AddEvent from './AddEvent'
+import EventList from './Eventlist'
 import { eventTabs } from '@/utils/constants'
 
 
 const EventNavbar = () => {
-    const [activeTab, setActiveTab] = useState('add');
+    const [activeTab, setActiveTab] = useState('view');
 
     const handleRenderComponent = () => {
+        if(activeTab === 'view') return <EventList />;
         if (activeTab === 'add') return <AddEvent />;
         if (activeTab === 'update') return <UpdateEvent />;
         if (activeTab === 'delete') return <DeleteEvent />;
