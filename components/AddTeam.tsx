@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import TeamForm from './TeamForm'
 
-type RoleType = 'leader' | 'member'
+type RoleType = 'leaders' | 'member'
 
 const AddTeam = () => {
   const [roleType, setRoleType] = useState<RoleType>('member')
@@ -38,7 +38,7 @@ const AddTeam = () => {
             className='w-full px-4 py-2.5 rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-green-500'
           >
             <option value="member">Member</option>
-            <option value="leader">Leader (President / VP)</option>
+            <option value="leaders">Leader (President / VP)</option>
           </select>
         </div>
 

@@ -1,12 +1,14 @@
-import { PlusCircle, PencilLine, Trash2, Users, CalendarDays } from 'lucide-react';
+import { PlusCircle, PencilLine, Trash2, Users, CalendarDays, Calendar } from 'lucide-react';
 
 export const eventTabs = [
+    { key: 'view', label: 'Event List', icon: Calendar },
     { key: 'add', label: 'Add Event', icon: PlusCircle },
     { key: 'update', label: 'Update Event', icon: PencilLine },
     { key: 'delete', label: 'Delete Event', icon: Trash2 },
 ]
 
 export const teamTabs = [
+    { key: 'view', label: 'Team List', icon: Users },
     { key: 'add', label: 'Add Team', icon: PlusCircle },
     { key: 'update', label: 'Update Team', icon: PencilLine },
     { key: 'delete', label: 'Delete Team', icon: Trash2 },

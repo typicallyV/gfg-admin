@@ -3,6 +3,107 @@ import connectToDatabase from '../lib/db';
 import { DomainModel } from '../models/Domain';
 import { LeaderModel } from '../models/Leader';
 
+const host = process.env.NEXT_PUBLIC_HOST_URL;
+
+/**
+ * @swagger
+ * /api/admin/teams/domain/{id}:
+ *   get:
+ *     summary: Admin - Get a domain
+ *     tags: [Admin Teams]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Domain found
+ */
+export async function getDomain(req: NextRequest, { params }: { params: { id: string } }) {
+  await connectToDatabase();
+  try {
+    const domain = await DomainModel.findById(params.id);
+    if (!domain) return NextResponse.json({ error: 'Domain not found' }, { status: 404 });
+    return NextResponse.json({ domain, success: true });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
+
+/**
+ * @swagger
+ * /api/admin/teams/leaders/{id}:
+ *   get:
+ *     summary: Admin - Get a leader
+ *     tags: [Admin Teams]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Leader found
+ */
+export async function getLeader(req: NextRequest, { params }: { params: { id: string } }) {
+  await connectToDatabase();
+  try {
+    const member = await LeaderModel.findById(params.id);
+    if (!member) return NextResponse.json({ error: 'Member not found' }, { status: 404 });
+    return NextResponse.json({ member, success: true });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
+
+/**
+ * @swagger
+ * /api/admin/teams/member/{id}:
+ *   get:
+ *     summary: Admin - Get a member
+ *     tags: [Admin Teams]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Member found
+ */
+export async function getMember( req: NextRequest, { params }: { params: { id: string } } ) {
+  await connectToDatabase();
+
+  try {
+    const domain = await DomainModel.findOne({
+      "members._id": params.id,
+    });
+
+    if (!domain) {
+      return NextResponse.json(
+        { error: "Member not found" },
+        { status: 404 }
+      );
+    }
+
+    const member = domain.members.id(params.id);
+
+    return NextResponse.json({
+      member,
+      success: true,
+    });
+  } catch (error: any) {
+    return NextResponse.json(
+      { error: error.message },
+      { status: 500 }
+    );
+  }
+}
+
 /**
  * @swagger
  * /api/teams:
@@ -49,7 +150,11 @@ export async function getLeaders(req: NextRequest) {
   await connectToDatabase();
   try {
     const leaders = await LeaderModel.find({});
-    return NextResponse.json({ leaders, success: true });
+    const domains = [{
+      name: "Leaders",
+      members: leaders
+    }];
+    return NextResponse.json({ domains, success: true });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
@@ -110,14 +215,15 @@ export async function createDomain(req: NextRequest) {
 export async function createMember(req: NextRequest) {
   await connectToDatabase();
   try {
-    const { domainId, member } = await req.json();
-    const domain = await DomainModel.findById(domainId);
+    const member = await req.json();
+    const domain = await DomainModel.findOne({ name: member.domain });
     if (!domain) return NextResponse.json({ error: 'Domain not found' }, { status: 404 });
 
     domain.members.push(member);
     await domain.save();
     return NextResponse.json({ domain, success: true }, { status: 201 });
   } catch (error: any) {
+    console.error('Error creating leader:', error);
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
 }
@@ -208,8 +314,8 @@ export async function updateDomain(req: NextRequest, { params }: { params: { id:
 export async function updateMember(req: NextRequest, { params }: { params: { id: string } }) {
   await connectToDatabase();
   try {
-    const { domainId, member } = await req.json();
-    const domain = await DomainModel.findById(domainId);
+    const member = await req.json();
+    const domain = await DomainModel.findOne({ name: member.domain });
     if (!domain) return NextResponse.json({ error: 'Domain not found' }, { status: 404 });
 
     const memberIndex = domain.members.findIndex((m: any) => m._id.toString() === params.id);
@@ -220,6 +326,7 @@ export async function updateMember(req: NextRequest, { params }: { params: { id:
 
     return NextResponse.json({ domain, success: true });
   } catch (error: any) {
+    console.error('Error updating member:', error);
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
 }
@@ -302,12 +409,9 @@ export async function deleteDomain(req: NextRequest, { params }: { params: { id:
 export async function deleteMember(req: NextRequest, { params }: { params: { id: string } }) {
   await connectToDatabase();
   try {
-    const searchParams = req.nextUrl.searchParams;
-    const domainId = searchParams.get('domainId');
-
-    if (!domainId) return NextResponse.json({ error: 'domainId required in query' }, { status: 400 });
-
-    const domain = await DomainModel.findById(domainId);
+    const domain = await DomainModel.findOne({
+      "members._id": params.id,
+    });
     if (!domain) return NextResponse.json({ error: 'Domain not found' }, { status: 404 });
 
     domain.members = domain.members.filter((m: any) => m._id.toString() !== params.id);

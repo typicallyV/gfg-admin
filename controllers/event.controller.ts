@@ -197,3 +197,30 @@ export async function updateEvent(req: NextRequest, { params }: { params: { id: 
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
 }
+
+/**
+ * @swagger
+ * /api/admin/events/{id}:
+ *   delete:
+ *     summary: Admin - Delete an event
+ *     tags: [Admin Events]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Event deleted
+ */
+export async function deleteEvent(req: NextRequest, { params }: { params: { id: string } }) {
+  await connectToDatabase();
+  try {
+    const event = await EventModel.findByIdAndDelete(params.id);
+    if (!event) return NextResponse.json({ error: 'Event not found' }, { status: 404 });
+    return NextResponse.json({ message: 'Event deleted successfully', success: true });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}

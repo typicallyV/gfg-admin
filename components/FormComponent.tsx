@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react';
+import { FormEvent, useState } from 'react'
 
 const inputClass =
     'w-full px-4 py-2.5 rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 placeholder-neutral-400 dark:placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition duration-200'
@@ -12,141 +12,181 @@ const sectionHeadingClass =
 
 
 const FormComponent = ({ type, onSuccess }: { type: string; onSuccess?: () => void }) => {
-    const [eventName, setEventName] = useState('');
-    const [eventDesc, setEventDesc] = useState('');
-    const [eventShortDesc, setEventShortDesc] = useState('');
-    const [eventStartDate, setEventStartDate] = useState('');
-    const [eventEndDate, setEventEndDate] = useState('');
-    const [eventImage, setEventImage] = useState<File | null>(null);
-    const [eventGallery, setEventGallery] = useState<File[]>([]);
-    const [eventVenue, setEventVenue] = useState('');
-    const [eventType, setEventType] = useState('');
-    const [eventTheme, setEventTheme] = useState('');
-    const [eventAudience, setEventAudience] = useState('');
-    const [eventTeamSize, setEventTeamSize] = useState(0);
-    const [eventPricing, setEventPricing] = useState('');
-    const [eventRegistrationFee, setEventRegistrationFee] = useState('');
-    const [eventRegistrationCount, setEventRegistrationCount] = useState(0);
-    const [eventRegistrationStatus, setEventRegistrationStatus] = useState('');
+    const [eventName, setEventName] = useState('')
+    const [eventDesc, setEventDesc] = useState('')
+    const [eventShortDesc, setEventShortDesc] = useState('')
+    const [eventStartDate, setEventStartDate] = useState('')
+    const [eventEndDate, setEventEndDate] = useState('')
+    const [eventImage, setEventImage] = useState<File | null>(null)
+    const [eventGallery, setEventGallery] = useState<File[]>([])
+    const [eventVenue, setEventVenue] = useState('')
+    const [eventType, setEventType] = useState<'solo' | 'team' | ''>('')
+    const [eventTheme, setEventTheme] = useState('')
+    const [eventAudience, setEventAudience] = useState<'rbu' | 'intercollege' | 'both' | ''>('')
+    const [eventTeamSize, setEventTeamSize] = useState(1)
+    const [eventPricing, setEventPricing] = useState('')
+    const [eventRegistrationFee, setEventRegistrationFee] = useState('')
+    const [eventRegistrationCount, setEventRegistrationCount] = useState(0)
+    const [eventRegistrationStatus, setEventRegistrationStatus] = useState<'open' | 'closed' | ''>('')
 
-    const [bannerPublicId, setBannerPublicId] = useState('');
-    const [galleryPublicIds, setGalleryPublicIds] = useState<string[]>([]);
-    const [isUploading, setIsUploading] = useState(false);
+    const [isUploading, setIsUploading] = useState(false)
+    const [successMessage, setSuccessMessage] = useState('')
+    const [errorMessage, setErrorMessage] = useState('')
 
-    const uploadSingleFile = async (file: File, folder: string) => {
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('folder', folder);
+    const parseMoney = (value: string) => {
+        const numericValue = Number(value.replace(/[^\d]/g, ''))
+        return Number.isFinite(numericValue) ? numericValue : 0
+    }
 
-        const res = await fetch('/api/upload', {
+    const parseDateTime = (value: string) => {
+        const date = new Date(value)
+        return Number.isNaN(date.getTime()) ? '' : date.toISOString()
+    }
+
+    const uploadSingleFile = async (file: File) => {
+        const formData = new FormData()
+        formData.append('photo', file)
+
+        const res = await fetch('/api/admin/create-image-url', {
             method: 'POST',
             body: formData,
-        });
+        })
 
         if (!res.ok) {
-            const text = await res.text();
-            console.error('Upload failed:', text);
-            throw new Error(text);
+            const text = await res.text()
+            throw new Error(text || 'Upload failed')
         }
 
-        const data = await res.json();
-        return Array.isArray(data) ? data[0] : data;
-    };
-
-    
-    const deleteFromCloudinary = async (publicId: string) => {
-        await fetch('/api/delete', {
-            method: 'DELETE',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ publicId }),
-        });
-    };
+        const data = await res.json()
+        return data as { url: string; publicId: string }
+    }
 
     const removeBanner = async () => {
-        if (bannerPublicId) {
-            await deleteFromCloudinary(bannerPublicId);
-            setBannerPublicId('');
-        }
-        setEventImage(null);
-    };
+        setEventImage(null)
+    }
 
-    
     const removeGalleryImage = async (idx: number) => {
-        if (galleryPublicIds[idx]) {
-            await deleteFromCloudinary(galleryPublicIds[idx]);
-            setGalleryPublicIds((prev) => prev.filter((_, i) => i !== idx));
-        }
-        setEventGallery((prev) => prev.filter((_, i) => i !== idx));
-    };
+        setEventGallery((prev) => prev.filter((_, i) => i !== idx))
+    }
 
-   
-    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
-        setIsUploading(true);
+    const resetForm = () => {
+        setEventName('')
+        setEventDesc('')
+        setEventShortDesc('')
+        setEventStartDate('')
+        setEventEndDate('')
+        setEventImage(null)
+        setEventGallery([])
+        setEventVenue('')
+        setEventType('')
+        setEventTheme('')
+        setEventAudience('')
+        setEventTeamSize(1)
+        setEventPricing('')
+        setEventRegistrationFee('')
+        setEventRegistrationCount(0)
+        setEventRegistrationStatus('')
+    }
+
+    const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+        e.preventDefault()
+        setIsUploading(true)
+        setErrorMessage('')
+        setSuccessMessage('')
 
         try {
-            let bannerResult = null;
-            if (eventImage && !bannerPublicId) {
-                bannerResult = await uploadSingleFile(eventImage, 'events/banners');
-                setBannerPublicId(bannerResult.public_id);
-                console.log('Banner uploaded:', {
-                    public_id: bannerResult.public_id,
+            if (!eventImage) {
+                throw new Error('Event banner is required')
+            }
+
+            if (!eventType) throw new Error('Event type is required')
+            if (!eventAudience) throw new Error('Target audience is required')
+            if (!eventRegistrationStatus) throw new Error('Registration status is required')
+
+            const bannerResult = await uploadSingleFile(eventImage)
+            const galleryResults = await Promise.all(
+                eventGallery.map((file) => uploadSingleFile(file))
+            )
+
+            const pricingFee = parseMoney(eventPricing)
+            const registrationFee = parseMoney(eventRegistrationFee)
+
+            const payload = {
+                name: eventName.trim(),
+                description: eventDesc.trim(),
+                shortDescription: eventShortDesc.trim(),
+                image: {
                     url: bannerResult.url,
-                    secure_url: bannerResult.secure_url,
-                });
+                    publicId: bannerResult.publicId,
+                },
+                gallery: galleryResults.map((item) => ({
+                    url: item.url,
+                    publicId: item.publicId,
+                })),
+                startDate: parseDateTime(eventStartDate),
+                endDate: parseDateTime(eventEndDate),
+                venue: eventVenue.trim(),
+                type: eventType,
+                theme: eventTheme.trim(),
+                audience: eventAudience || undefined,
+                teamSize: {
+                    min: eventTeamSize,
+                    max: eventTeamSize,
+                },
+                pricing: {
+                    rbu: {
+                        isPaid: pricingFee > 0,
+                        fee: pricingFee,
+                    },
+                    intercollege: {
+                        isPaid: pricingFee > 0,
+                        fee: pricingFee,
+                    },
+                },
+                registrationFee,
+                registrationsCount: eventRegistrationCount,
+                registrationStatus: eventRegistrationStatus,
             }
 
-            const newGalleryFiles = eventGallery.slice(galleryPublicIds.length);
-            let galleryResults: any[] = [];
-            if (newGalleryFiles.length > 0) {
-                galleryResults = await Promise.all(
-                    newGalleryFiles.map((file) =>
-                        uploadSingleFile(file, 'events/gallery')
-                    )
-                );
-                const newIds = galleryResults.map((r) => r.public_id);
-                setGalleryPublicIds((prev) => [...prev, ...newIds]);
-                galleryResults.forEach((r, i) => {
-                    console.log(`Gallery image ${i + 1} uploaded:`, {
-                        public_id: r.public_id,
-                        url: r.url,
-                        secure_url: r.secure_url,
-                    });
-                });
+            const response = await fetch('/api/admin/events', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(payload),
+            })
+
+            const responseData = await response.json()
+
+            if (!response.ok) {
+                throw new Error(responseData.error || 'Failed to create event')
             }
 
-            console.log('All uploads complete.');
-
-            setEventName('');
-            setEventDesc('');
-            setEventShortDesc('');
-            setEventStartDate('');
-            setEventEndDate('');
-            setEventImage(null);
-            setEventGallery([]);
-            setEventVenue('');
-            setEventType('');
-            setEventTheme('');
-            setEventAudience('');
-            setEventTeamSize(0);
-            setEventPricing('');
-            setEventRegistrationFee('');
-            setEventRegistrationCount(0);
-            setEventRegistrationStatus('');
-            setBannerPublicId('');
-            setGalleryPublicIds([]);
-
-            onSuccess?.();
+            resetForm()
+            setSuccessMessage(responseData?.success ? 'Event created successfully.' : 'Event submitted.')
+            onSuccess?.()
         } catch (err) {
-            console.error('Submit error:', err);
+            setErrorMessage(err instanceof Error ? err.message : 'Failed to submit event')
         } finally {
-            setIsUploading(false);
+            setIsUploading(false)
         }
-    };
+    }
 
     return (
         <div className='flex justify-center items-start px-4 py-6'>
             <form className='px-8 py-7 space-y-8' onSubmit={handleSubmit}>
+                {successMessage && (
+                    <div className='rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-300'>
+                        {successMessage}
+                    </div>
+                )}
+
+                {errorMessage && (
+                    <div className='rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-900/60 dark:bg-rose-950/40 dark:text-rose-300'>
+                        {errorMessage}
+                    </div>
+                )}
+
                 <section>
                     <h3 className={sectionHeadingClass}>Basic Info</h3>
                     <div className='space-y-5'>
@@ -224,13 +264,15 @@ const FormComponent = ({ type, onSuccess }: { type: string; onSuccess?: () => vo
                         </div>
                         <div>
                             <label className={labelClass}>Type</label>
-                            <input
+                            <select
                                 className={inputClass}
-                                type="text"
-                                placeholder='e.g. Workshop, Hackathon'
                                 value={eventType}
-                                onChange={(e) => setEventType(e.target.value)}
-                            />
+                                onChange={(e) => setEventType(e.target.value as 'solo' | 'team' | '')}
+                            >
+                                <option value=''>Select type</option>
+                                <option value='solo'>Solo</option>
+                                <option value='team'>Team</option>
+                            </select>
                         </div>
                         <div>
                             <label className={labelClass}>Theme</label>
@@ -244,13 +286,16 @@ const FormComponent = ({ type, onSuccess }: { type: string; onSuccess?: () => vo
                         </div>
                         <div>
                             <label className={labelClass}>Target Audience</label>
-                            <input
+                            <select
                                 className={inputClass}
-                                type="text"
-                                placeholder='e.g. All students'
                                 value={eventAudience}
-                                onChange={(e) => setEventAudience(e.target.value)}
-                            />
+                                onChange={(e) => setEventAudience(e.target.value as 'rbu' | 'intercollege' | 'both' | '')}
+                            >
+                                <option value=''>Select audience</option>
+                                <option value='rbu'>RBU</option>
+                                <option value='intercollege'>Intercollege</option>
+                                <option value='both'>Both</option>
+                            </select>
                         </div>
                         <div>
                             <label className={labelClass}>Team Size</label>
@@ -259,7 +304,7 @@ const FormComponent = ({ type, onSuccess }: { type: string; onSuccess?: () => vo
                                 type="number"
                                 placeholder='e.g. 4'
                                 value={eventTeamSize}
-                                onChange={(e) => setEventTeamSize(parseInt(e.target.value))}
+                                onChange={(e) => setEventTeamSize(Number(e.target.value) || 0)}
                             />
                         </div>
                     </div>
@@ -273,7 +318,7 @@ const FormComponent = ({ type, onSuccess }: { type: string; onSuccess?: () => vo
                             <input
                                 className={inputClass}
                                 type="text"
-                                placeholder='e.g. Free / ₹199'
+                                placeholder='e.g. Free or 199'
                                 value={eventPricing}
                                 onChange={(e) => setEventPricing(e.target.value)}
                             />
@@ -283,7 +328,7 @@ const FormComponent = ({ type, onSuccess }: { type: string; onSuccess?: () => vo
                             <input
                                 className={inputClass}
                                 type="text"
-                                placeholder='e.g. ₹0'
+                                placeholder='e.g. 0 or 150'
                                 value={eventRegistrationFee}
                                 onChange={(e) => setEventRegistrationFee(e.target.value)}
                             />
@@ -300,13 +345,15 @@ const FormComponent = ({ type, onSuccess }: { type: string; onSuccess?: () => vo
                         </div>
                         <div>
                             <label className={labelClass}>Registration Status</label>
-                            <input
+                            <select
                                 className={inputClass}
-                                type="text"
-                                placeholder='e.g. Open / Closed'
                                 value={eventRegistrationStatus}
-                                onChange={(e) => setEventRegistrationStatus(e.target.value)}
-                            />
+                                onChange={(e) => setEventRegistrationStatus(e.target.value as 'open' | 'closed' | '')}
+                            >
+                                <option value=''>Select status</option>
+                                <option value='open'>Open</option>
+                                <option value='closed'>Closed</option>
+                            </select>
                         </div>
                     </div>
                 </section>

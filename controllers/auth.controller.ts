@@ -19,7 +19,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret';
  *           schema:
  *             type: object
  *             properties:
- *               username:
+ *               email:
  *                 type: string
  *               password:
  *                 type: string
@@ -30,9 +30,9 @@ const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret';
 export async function loginAdmin(req: NextRequest) {
   await connectToDatabase();
   try {
-    const { username, password } = await req.json();
+    const { email, password } = await req.json();
 
-    const user = await UserModel.findOne({ username });
+    const user = await UserModel.findOne({ email });
     if (!user) return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
 
     // Assuming we hashed passwords, but fallback to plain if not for initial seed.
@@ -40,9 +40,9 @@ export async function loginAdmin(req: NextRequest) {
     const isMatch = await bcrypt.compare(password, user.password!) || password === user.password;
     if (!isMatch) return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
 
-    const token = jwt.sign({ id: user._id, username: user.username }, JWT_SECRET, { expiresIn: '1d' });
+    const token = jwt.sign({ id: user._id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '1d' });
 
-    const response = NextResponse.json({ message: 'Login successful', success: true });
+    const response = NextResponse.json({ message: 'Login successful', success: true, role: user.role });
     response.cookies.set('admin_token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -75,6 +75,39 @@ export async function logoutAdmin(req: NextRequest) {
       path: '/',
     });
     return response;
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
+
+/**
+ * @swagger
+ * /api/check-role:
+ *   post:
+ *     summary: Check role by email
+ *     tags: [Admin Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Role retrieval successful
+ */
+export async function checkEmailRole(req: NextRequest) {
+  await connectToDatabase();
+  try {
+    const { email } = await req.json();
+
+    const user = await UserModel.findOne({ email });
+    if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
+
+    return NextResponse.json({ role: user.role });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

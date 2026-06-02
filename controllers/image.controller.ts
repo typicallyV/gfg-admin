@@ -20,7 +20,7 @@ cloudinary.config({
  *           schema:
  *             type: object
  *             properties:
- *               file:
+ *               photo:
  *                 type: string
  *                 format: binary
  *     responses:
@@ -30,7 +30,7 @@ cloudinary.config({
 export async function uploadImage(req: NextRequest) {
   try {
     const formData = await req.formData();
-    const file = formData.get('file') as File;
+    const file = formData.get('photo') as File;
 
     if (!file) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 });
