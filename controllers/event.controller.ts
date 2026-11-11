@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
+import mongoose from 'mongoose';
 import connectToDatabase from '../lib/db';
 import { EventModel } from '../models/Event';
+import { RegistrationModel } from '../models/Registration';
 
 /**
  * @swagger
@@ -37,15 +39,24 @@ import { EventModel } from '../models/Event';
 export async function getEvents(req: NextRequest) {
   await connectToDatabase();
   const searchParams = req.nextUrl.searchParams;
-  const status = searchParams.get('status');
+
+  const rawLimit = parseInt(searchParams.get('limit') || '10', 10);
+  const limit = Number.isInteger(rawLimit) && rawLimit > 0 ? Math.min(rawLimit, 50) : 10;
+
+  const rawPage = parseInt(searchParams.get('page') || '1', 10);
+  const page = Number.isInteger(rawPage) && rawPage > 0 ? rawPage : 1;
+
   const order = searchParams.get('order') === 'desc' ? -1 : 1;
-  const limit = parseInt(searchParams.get('limit') || '10', 10);
-  const page = parseInt(searchParams.get('page') || '1', 10);
   const upcoming = searchParams.get('upcoming') === 'true';
 
-  const query: any = {};
-  if (status) query.registrationStatus = status;
-  if (upcoming) query.startDate = { $gte: new Date() };
+  const query: Record<string, unknown> = {};
+  const status = searchParams.get('status');
+  if (status && (status === 'open' || status === 'closed')) {
+    query.registrationStatus = status;
+  }
+  if (upcoming) {
+    query.startDate = { $gte: new Date() };
+  }
 
   const skip = (page - 1) * limit;
 
@@ -56,9 +67,21 @@ export async function getEvents(req: NextRequest) {
       .limit(limit);
     const total = await EventModel.countDocuments(query);
 
-    return NextResponse.json({ events, total, page, limit, success: true });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json(
+      { success: true, events, total, page, limit },
+      {
+        status: 200,
+        headers: {
+          'Cache-Control': 'public, max-age=60, s-maxage=300, stale-while-revalidate=600',
+        },
+      }
+    );
+  } catch (error: unknown) {
+    console.error('Error fetching events:', error);
+    return NextResponse.json(
+      { success: false, error: 'Failed to retrieve events.' },
+      { status: 500 }
+    );
   }
 }
 
@@ -79,13 +102,34 @@ export async function getEvents(req: NextRequest) {
  *         description: Event details
  */
 export async function getEventById(req: NextRequest, { params }: { params: { id: string } }) {
+  if (!mongoose.Types.ObjectId.isValid(params.id)) {
+    return NextResponse.json(
+      { success: false, error: 'Invalid event ID format.' },
+      { status: 400 }
+    );
+  }
+
   await connectToDatabase();
   try {
     const event = await EventModel.findById(params.id);
-    if (!event) return NextResponse.json({ error: 'Event not found' }, { status: 404 });
-    return NextResponse.json({ event, success: true });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    if (!event) {
+      return NextResponse.json({ success: false, error: 'Event not found.' }, { status: 404 });
+    }
+    return NextResponse.json(
+      { success: true, event },
+      {
+        status: 200,
+        headers: {
+          'Cache-Control': 'public, max-age=60, s-maxage=300, stale-while-revalidate=600',
+        },
+      }
+    );
+  } catch (error: unknown) {
+    console.error('Error fetching event by ID:', error);
+    return NextResponse.json(
+      { success: false, error: 'Failed to retrieve event.' },
+      { status: 500 }
+    );
   }
 }
 
@@ -115,24 +159,60 @@ export async function getEventById(req: NextRequest, { params }: { params: { id:
  *         description: Successful registration
  */
 export async function registerForEvent(req: NextRequest, { params }: { params: { id: string } }) {
+  if (!mongoose.Types.ObjectId.isValid(params.id)) {
+    return NextResponse.json(
+      { success: false, error: 'Invalid event ID format.' },
+      { status: 400 }
+    );
+  }
+
   await connectToDatabase();
   try {
-    const body = await req.json();
-    const event = await EventModel.findById(params.id);
-    
-    if (!event) return NextResponse.json({ error: 'Event not found' }, { status: 404 });
-    if (event.registrationStatus !== 'open') {
-      return NextResponse.json({ error: 'Registration is closed for this event' }, { status: 400 });
+    let body: Record<string, unknown>;
+    try {
+      body = await req.json();
+    } catch {
+      return NextResponse.json(
+        { success: false, error: 'Invalid JSON request body.' },
+        { status: 400 }
+      );
     }
 
-    // Logic to save registration details would go here
-    // For now, increment registration count
-    event.registrationsCount += 1;
-    await event.save();
+    const event = await EventModel.findById(params.id);
+    
+    if (!event) {
+      return NextResponse.json({ success: false, error: 'Event not found.' }, { status: 404 });
+    }
+    if (event.registrationStatus !== 'open') {
+      return NextResponse.json(
+        { success: false, error: 'Registration is closed for this event.' },
+        { status: 400 }
+      );
+    }
 
-    return NextResponse.json({ message: 'Registration successful', success: true });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    const registration = new RegistrationModel({
+      eventId: event._id,
+      ...body,
+    });
+    await registration.save();
+
+    await EventModel.findByIdAndUpdate(params.id, {
+      $inc: { registrationsCount: 1 },
+    });
+
+    return NextResponse.json(
+      { success: true, message: 'Registration successful.', registration },
+      {
+        status: 201,
+        headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' },
+      }
+    );
+  } catch (error: unknown) {
+    console.error('Event registration error:', error);
+    return NextResponse.json(
+      { success: false, error: 'Registration failed. Please try again.' },
+      { status: 500 }
+    );
   }
 }
 
@@ -159,8 +239,9 @@ export async function createEvent(req: NextRequest) {
     const event = new EventModel(body);
     await event.save();
     return NextResponse.json({ event, success: true }, { status: 201 });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 400 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Failed to create event';
+    return NextResponse.json({ success: false, error: message }, { status: 400 });
   }
 }
 
@@ -191,10 +272,11 @@ export async function updateEvent(req: NextRequest, { params }: { params: { id: 
   try {
     const body = await req.json();
     const event = await EventModel.findByIdAndUpdate(params.id, body, { new: true, runValidators: true });
-    if (!event) return NextResponse.json({ error: 'Event not found' }, { status: 404 });
+    if (!event) return NextResponse.json({ success: false, error: 'Event not found' }, { status: 404 });
     return NextResponse.json({ event, success: true });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 400 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Failed to update event';
+    return NextResponse.json({ success: false, error: message }, { status: 400 });
   }
 }
 
@@ -218,9 +300,10 @@ export async function deleteEvent(req: NextRequest, { params }: { params: { id: 
   await connectToDatabase();
   try {
     const event = await EventModel.findByIdAndDelete(params.id);
-    if (!event) return NextResponse.json({ error: 'Event not found' }, { status: 404 });
+    if (!event) return NextResponse.json({ success: false, error: 'Event not found' }, { status: 404 });
     return NextResponse.json({ message: 'Event deleted successfully', success: true });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Failed to delete event';
+    return NextResponse.json({ success: false, error: message }, { status: 500 });
   }
 }

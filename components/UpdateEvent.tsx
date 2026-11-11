@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import UpdateEventForm from './UpdateEventForm'
+import UpdateEventForm, { EventData } from './UpdateEventForm'
 
 const inputClass =
   'w-full px-4 py-2.5 rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 placeholder-neutral-400 dark:placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition duration-200'
@@ -12,7 +12,7 @@ const sectionHeadingClass =
 const UpdateEvent = () => {
   const [eventFound, setEventFound] = useState(false)
   const [eventId, setEventId] = useState('')
-  const [eventData, setEventData] = useState<any>(null)
+  const [eventData, setEventData] = useState<EventData | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
 
@@ -90,14 +90,14 @@ const UpdateEvent = () => {
           </section>}
         </form>
 
-        {eventFound && (
+        {eventFound && eventData && (
           <div className='px-8 pb-6'>
             <div className='rounded-2xl border border-neutral-200 bg-neutral-50 px-5 py-4 dark:border-neutral-700 dark:bg-neutral-800/60'>
               <p className='text-xs font-semibold uppercase tracking-widest text-green-600 dark:text-green-400'>
                 Selected Event
               </p>
               <p className='mt-1 text-lg font-semibold text-neutral-900 dark:text-neutral-100'>
-                {eventData?.name || 'Event found'}
+                {eventData.name || 'Event found'}
               </p>
               <p className='mt-1 text-sm text-neutral-500 dark:text-neutral-400'>
                 Update the event details below. Existing image and gallery items are kept unless replaced.

@@ -2,8 +2,7 @@
 
 import { useState } from 'react'
 import TeamForm from './TeamForm'
-
-type RoleType = 'leaders' | 'member'
+import { RoleType } from '@/types/Domain'
 
 const AddTeam = () => {
   const [roleType, setRoleType] = useState<RoleType>('member')
@@ -39,6 +38,7 @@ const AddTeam = () => {
           >
             <option value="member">Member</option>
             <option value="leaders">Leader (President / VP)</option>
+            <option value="mentors">Mentor</option>
           </select>
         </div>
 

@@ -9,27 +9,43 @@ export default function DomainSearch() {
   const [searchedDomain, setSearchedDomain] = useState('')
   const [domain, setDomain] = useState<Domain | null>(null)
   const [loading, setLoading] = useState(false)
+  const [notFound, setNotFound] = useState(false)
 
-  const handleSubmit = async (
-    e: FormEvent<HTMLFormElement>
-  ) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
+    const trimmed = domainName.trim()
+    if (!trimmed) return
+
     setLoading(true)
-    let infoType = "teams"
-    if(domainName.toLowerCase() === 'leader') {
-      infoType = "leaders"
+    setNotFound(false)
+
+    const lower = trimmed.toLowerCase()
+    let endpoint = `/api/teams?domain=${encodeURIComponent(trimmed)}`
+
+    if (lower === 'leader' || lower === 'leaders') {
+      endpoint = '/api/leaders'
+    } else if (lower === 'mentor' || lower === 'mentors') {
+      endpoint = '/api/mentors'
     }
+
     try {
-      const response = await fetch(`/api/${infoType}?domain=${encodeURIComponent(domainName)}`, {
-		method: 'GET'
-	  })
+      const response = await fetch(endpoint, {
+        method: 'GET',
+      })
 
       const data = await response.json()
-      setDomain(data.domains[0])
-      setSearchedDomain(domainName)
+      if (response.ok && data?.domains && data.domains.length > 0) {
+        setDomain(data.domains[0])
+        setNotFound(false)
+      } else {
+        setDomain(null)
+        setNotFound(true)
+      }
+      setSearchedDomain(trimmed)
     } catch {
       setDomain(null)
-      setSearchedDomain(domainName)
+      setNotFound(true)
+      setSearchedDomain(trimmed)
     } finally {
       setLoading(false)
     }
@@ -49,7 +65,7 @@ export default function DomainSearch() {
             </h2>
 
             <p className='mt-1 text-sm text-neutral-500 dark:text-neutral-400'>
-              Enter a domain name to display the matching team below.
+              Enter a domain name (e.g. Technical, Management, Leaders, Mentors) to display the team.
             </p>
           </div>
 
@@ -64,24 +80,30 @@ export default function DomainSearch() {
 
               <input
                 value={domainName}
-                onChange={(e) =>
-                  setDomainName(e.target.value)
-                }
+                onChange={(e) => setDomainName(e.target.value)}
                 type='text'
-                placeholder='Enter domain name'
+                placeholder='Enter domain name (e.g. Technical, Leaders, Mentors)'
                 className='w-full rounded-xl border border-neutral-300 bg-white px-4 py-3 text-neutral-900 outline-none transition placeholder:text-neutral-400 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 dark:border-neutral-600 dark:bg-neutral-950 dark:text-neutral-100 dark:placeholder:text-neutral-500'
               />
             </label>
 
             <button
               type='submit'
-              disabled={loading}
+              disabled={loading || !domainName.trim()}
               className='inline-flex items-center justify-center rounded-xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-emerald-400'
             >
-              {loading ? 'Loading...' : 'Submit'}
+              {loading ? 'Searching...' : 'Submit'}
             </button>
           </form>
         </section>
+
+        {notFound && (
+          <div className='rounded-2xl border border-neutral-200 bg-white p-6 text-center dark:border-neutral-700 dark:bg-neutral-900'>
+            <p className='text-neutral-600 dark:text-neutral-400'>
+              No team or domain found matching &quot;{searchedDomain}&quot;.
+            </p>
+          </div>
+        )}
 
         {domain && (
           <DomainTeams

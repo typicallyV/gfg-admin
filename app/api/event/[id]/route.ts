@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
 import { getEventById } from "@/controllers/event.controller";
 
-export async function GET(req: NextRequest, { params }: any) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   return getEventById(req, { params: { id } });
 }

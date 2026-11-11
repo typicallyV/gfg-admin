@@ -4,10 +4,10 @@ export type TeamMember = {
   lastname: string
   role: string
   photo: string
-  githubUrl: string
-  linkedinUrl: string
-  svgvector: string
-  backgroundColor: string
+  githubUrl?: string
+  linkedinUrl?: string
+  svgvector?: string
+  backgroundColor?: string
 }
 
 export type Domain = {
@@ -15,3 +15,5 @@ export type Domain = {
   name: string
   members: TeamMember[]
 }
+
+export type RoleType = 'leaders' | 'member' | 'mentors'

@@ -28,31 +28,65 @@ const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret';
  *         description: Login successful (Sets cookie)
  */
 export async function loginAdmin(req: NextRequest) {
-  await connectToDatabase();
   try {
-    const { email, password } = await req.json();
+    await connectToDatabase();
+
+    let body: { email?: string; password?: string } | null = null;
+    try {
+      body = await req.json();
+    } catch {
+      return NextResponse.json({ success: false, error: 'Invalid JSON request body' }, { status: 400 });
+    }
+
+    const { email, password } = body || {};
+    if (!email || !password) {
+      return NextResponse.json({ success: false, error: 'Email and password are required' }, { status: 400 });
+    }
 
     const user = await UserModel.findOne({ email });
-    if (!user) return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
+    if (!user || !user.password) {
+      return NextResponse.json({ success: false, error: 'Invalid credentials' }, { status: 401 });
+    }
 
-    // Assuming we hashed passwords, but fallback to plain if not for initial seed.
-    // In production, always compare hashed password
-    const isMatch = await bcrypt.compare(password, user.password!) || password === user.password;
-    if (!isMatch) return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
+    let isMatch = false;
+    try {
+      isMatch = await bcrypt.compare(password, user.password);
+    } catch {
+      isMatch = false;
+    }
 
-    const token = jwt.sign({ id: user._id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '1d' });
+    if (!isMatch && password === user.password) {
+      isMatch = true;
+    }
 
-    const response = NextResponse.json({ message: 'Login successful', success: true, role: user.role });
+    if (!isMatch) {
+      return NextResponse.json({ success: false, error: 'Invalid credentials' }, { status: 401 });
+    }
+
+    const token = jwt.sign(
+      { id: user._id, email: user.email, role: user.role },
+      JWT_SECRET,
+      { expiresIn: '1d' }
+    );
+
+    const response = NextResponse.json({
+      message: 'Login successful',
+      success: true,
+      role: user.role,
+    });
+
     response.cookies.set('admin_token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       path: '/',
       maxAge: 86400, // 1 day
+      sameSite: 'lax',
     });
 
     return response;
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Login failed';
+    return NextResponse.json({ success: false, error: message }, { status: 500 });
   }
 }
 
@@ -66,7 +100,7 @@ export async function loginAdmin(req: NextRequest) {
  *       200:
  *         description: Logout successful (Clears cookie)
  */
-export async function logoutAdmin(req: NextRequest) {
+export async function logoutAdmin() {
   try {
     const response = NextResponse.json({ message: 'Logout successful', success: true });
     response.cookies.set('admin_token', '', {
@@ -75,8 +109,9 @@ export async function logoutAdmin(req: NextRequest) {
       path: '/',
     });
     return response;
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Logout failed';
+    return NextResponse.json({ success: false, error: message }, { status: 500 });
   }
 }
 
@@ -100,15 +135,25 @@ export async function logoutAdmin(req: NextRequest) {
  *         description: Role retrieval successful
  */
 export async function checkEmailRole(req: NextRequest) {
-  await connectToDatabase();
   try {
-    const { email } = await req.json();
+    await connectToDatabase();
+
+    let body: { email?: string } | null = null;
+    try {
+      body = await req.json();
+    } catch {
+      return NextResponse.json({ success: false, error: 'Invalid request' }, { status: 400 });
+    }
+
+    const { email } = body || {};
+    if (!email) return NextResponse.json({ success: false, error: 'Email is required' }, { status: 400 });
 
     const user = await UserModel.findOne({ email });
-    if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    if (!user) return NextResponse.json({ success: false, error: 'User not found' }, { status: 404 });
 
-    return NextResponse.json({ role: user.role });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ success: true, role: user.role });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Error checking role';
+    return NextResponse.json({ success: false, error: message }, { status: 500 });
   }
 }
