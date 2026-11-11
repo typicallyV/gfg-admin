@@ -11,7 +11,7 @@ type EventImage = {
   publicId: string
 }
 
-type EventData = {
+export type EventData = {
   _id?: string
   name?: string
   description?: string
@@ -86,7 +86,7 @@ const UpdateEventForm = ({ eventData, onSuccess }: Props) => {
   const [successMessage, setSuccessMessage] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
 
-  const handleChange = (field: string, value: any) => {
+  const handleChange = (field: string, value: string | number | File | File[] | null) => {
     setFormData((prev) => ({
       ...prev,
       [field]: value,

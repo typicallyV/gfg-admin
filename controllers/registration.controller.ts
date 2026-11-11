@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
+import mongoose from 'mongoose';
 import connectToDatabase from '../lib/db';
 import { RegistrationModel } from '../models/Registration';
 import { EventModel } from '../models/Event';
-import { ObjectId } from 'mongoose';
 
-export async function getRegisteredUsersByEventId(req: NextRequest, { params }: { params: { eventId: ObjectId } }) {
+export async function getRegisteredUsersByEventId(req: NextRequest, { params }: { params: { eventId: string } }) {
   await connectToDatabase();
   try {
     const event = await EventModel.findById(params.eventId);
@@ -16,10 +16,11 @@ export async function getRegisteredUsersByEventId(req: NextRequest, { params }: 
     const sortBy = searchParams.get('sortBy') || 'createdAt';
     const order = searchParams.get('order') === 'asc' ? 1 : -1;
     
+    const eventObjectId = new mongoose.Types.ObjectId(params.eventId);
     const skip = (page - 1) * limit;
-    const total = await RegistrationModel.countDocuments({ eventId: params.eventId });
+    const total = await RegistrationModel.countDocuments({ eventId: eventObjectId });
     
-    const registrations = await RegistrationModel.find({ eventId: params.eventId })
+    const registrations = await RegistrationModel.find({ eventId: eventObjectId })
       .sort({ [sortBy]: order })
       .skip(skip)
       .limit(limit);
@@ -34,31 +35,32 @@ export async function getRegisteredUsersByEventId(req: NextRequest, { params }: 
         totalPages: Math.ceil(total / limit)
       }
     });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Error retrieving registrations';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 
-export async function getRegisteredUserByEventId(req: NextRequest, { params }: { params: { id: ObjectId } }) {
+export async function getRegisteredUserByEventId(req: NextRequest, { params }: { params: { id: string } }) {
   await connectToDatabase();
   try {
     const searchParams = req.nextUrl.searchParams;
-    const teamId = searchParams.get('teamId');
     const teamName = searchParams.get('teamName');
     const email = searchParams.get('email');
     const name = searchParams.get('name');
 
-    const filter: any = { _id: params.id };
-    if (teamId) filter.teamId = teamId;
+    const filter: Record<string, unknown> = { _id: params.id };
     if (teamName) filter.teamName = { $regex: teamName, $options: 'i' };
-    if (email) filter.email = { $regex: email, $options: 'i' };
-    if (name) filter.name = { $regex: name, $options: 'i' };
+    if (email) filter['teamLeader.email'] = email;
+    if (name) filter['teamLeader.name'] = { $regex: name, $options: 'i' };
     
     const registration = await RegistrationModel.findOne(filter);
     if (!registration) return NextResponse.json({ error: 'Registration not found' }, { status: 404 });
     
     return NextResponse.json({ registration, success: true });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Error retrieving registration';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
+

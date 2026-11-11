@@ -29,11 +29,19 @@ export default function LoginPage() {
         const res = await fetch('/api/check-role', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email }),
+          body: JSON.stringify({ email: email.trim() }),
         });
         if (res.ok) {
-          const data = await res.json();
-          setRoleInfo(data.role);
+          const text = await res.text();
+          let data: { role?: string } | null = null;
+          if (text) {
+            try {
+              data = JSON.parse(text);
+            } catch {
+              data = null;
+            }
+          }
+          setRoleInfo(data?.role || null);
           setError(null);
         } else {
           setRoleInfo(null);
@@ -56,17 +64,28 @@ export default function LoginPage() {
       const res = await fetch('/api/admin/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email: email.trim(), password }),
       });
-      const data = await res.json();
+
+      let data: { error?: string; success?: boolean; role?: string } | null = null;
+      const text = await res.text();
+      if (text) {
+        try {
+          data = JSON.parse(text);
+        } catch {
+          data = null;
+        }
+      }
+
       if (!res.ok) {
-        setError(data.error || 'Login failed');
+        setError(data?.error || `Login failed (Status: ${res.status})`);
         setIsLoggingIn(false);
         return;
       }
+
       router.push('/dashboard/teams');
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      setError(err instanceof Error ? err.message : 'An error occurred during login');
       setIsLoggingIn(false);
     }
   };

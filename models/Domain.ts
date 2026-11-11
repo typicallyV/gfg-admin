@@ -1,6 +1,7 @@
-import mongoose, { Document, Model, Schema } from 'mongoose';
+import mongoose, { Document, Model, Schema, Types } from 'mongoose';
 
 export interface IMember {
+  _id?: Types.ObjectId | string;
   firstname: string;
   lastname: string;
   role: string;
@@ -11,9 +12,11 @@ export interface IMember {
   backgroundColor?: string;
 }
 
+export type IMemberSubdocument = Types.Subdocument & IMember;
+
 export interface IDomain extends Document {
   name: string;
-  members: IMember[];
+  members: Types.DocumentArray<IMemberSubdocument>;
 }
 
 const MemberSchema: Schema<IMember> = new mongoose.Schema({
@@ -37,3 +40,4 @@ const DomainSchema: Schema<IDomain> = new mongoose.Schema(
 
 export const DomainModel: Model<IDomain> =
   mongoose.models.Domain || mongoose.model<IDomain>('Domain', DomainSchema);
+

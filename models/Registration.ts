@@ -1,4 +1,4 @@
-import mongoose, { Document, Model, ObjectId, Schema } from 'mongoose';
+import mongoose, { Document, Model, Schema } from 'mongoose';
 
 export interface ITeamLeader extends Document {
   name: string;
@@ -31,7 +31,7 @@ export interface IPayment extends Document {
 }
 
 export interface IRegistration extends Document {
-  eventId: ObjectId;
+  eventId: mongoose.Types.ObjectId | string;
   teamName: string;
   teamLeader: ITeamLeader;
   teamMembers: ITeamMember[];

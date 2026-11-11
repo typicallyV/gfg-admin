@@ -1,12 +1,12 @@
 import { NextRequest } from 'next/server';
 import { deleteEvent, updateEvent } from "@/controllers/event.controller";
 
-export async function PUT(req: NextRequest, { params }: any) {
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   return updateEvent(req, { params: { id } });
 }
 
-export async function DELETE(req: NextRequest, { params }: any) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   return deleteEvent(req, { params: { id } });
 }
